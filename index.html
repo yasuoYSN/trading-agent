@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Coach AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0D0F0E;--bg2:#141715;--bg3:#1C1F1D;--bg4:#242826;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --green:#4ADE80;--green-dim:rgba(74,222,128,0.12);
+  --gold:#F0B429;--gold-dim:rgba(240,180,41,0.12);
+  --red:#F87171;--red-dim:rgba(248,113,113,0.12);
+  --blue:#60A5FA;--blue-dim:rgba(96,165,250,0.1);
+  --text:#E8EDE9;--text2:#9AA39B;--text3:#5C6B5E;
+  --font:'Sora',sans-serif;--serif:'Instrument Serif',serif;--mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(6px)}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:32px;width:440px;max-width:92vw}
+.modal-logo{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.modal-tag{font-family:var(--mono);font-size:10px;color:var(--green);border:1px solid rgba(74,222,128,0.3);border-radius:4px;padding:2px 6px;font-style:normal}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:20px;line-height:1.6}
+.provider-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.provider-card{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all 0.15s}
+.provider-card:hover{border-color:var(--green)}
+.provider-card.active{border-color:var(--green);background:var(--green-dim)}
+.provider-card .icon{font-size:14px;margin-bottom:4px}
+.provider-card .name{font-size:12px;font-weight:500;color:var(--text)}
+.provider-card .model{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
+.field-label{font-family:var(--mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:6px}
+.field-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;transition:border-color 0.15s;margin-bottom:6px}
+.field-input:focus{border-color:rgba(74,222,128,0.5)}
+.field-hint{font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:14px}
+.field-hint a{color:var(--green);text-decoration:none}
+.modal-err{font-size:11px;color:var(--red);display:none;margin-bottom:10px}
+.btn-primary{background:var(--green);color:#0D0F0E;border:none;border-radius:8px;padding:10px 18px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;width:100%}
+.btn-primary:hover{background:#6EE7A0}
+.btn-ghost{background:none;color:var(--text2);border:1px solid var(--border2);border-radius:8px;padding:7px 14px;font-family:var(--font);font-size:12px;cursor:pointer;transition:all 0.15s}
+.btn-ghost:hover{border-color:var(--green);color:var(--green)}
+.modal-secure{font-size:10px;color:var(--text3);margin-top:10px;text-align:center}
+
+/* ── TOPNAV ── */
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:50px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;z-index:10}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.brand-name{font-family:var(--serif);font-size:16px;font-style:italic}
+.brand-tag{font-family:var(--mono);font-size:9px;color:var(--green);border:1px solid rgba(74,222,128,0.3);border-radius:3px;padding:2px 5px}
+.nav-tabs{display:flex;gap:3px}
+.nav-tab{font-size:11.5px;font-weight:500;color:var(--text3);padding:5px 12px;border-radius:6px;cursor:pointer;border:1px solid transparent;background:none;font-family:var(--font);transition:all 0.15s}
+.nav-tab:hover{color:var(--text2);background:var(--bg3)}
+.nav-tab.active{color:var(--text);background:var(--bg3);border-color:var(--border2)}
+.nav-right{display:flex;align-items:center;gap:8px}
+.week-badge{font-family:var(--mono);font-size:10px;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(240,180,41,0.2);border-radius:4px;padding:3px 9px}
+
+/* ── LAYOUT ── */
+.app-body{display:flex;flex:1;overflow:hidden}
+.sidebar{width:210px;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:12px;gap:3px}
+.sb-section{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text3);padding:10px 8px 5px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:7px;cursor:pointer;font-size:12px;color:var(--text2);transition:all 0.15s;border:1px solid transparent}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:var(--green-dim);color:var(--green);border-color:rgba(74,222,128,0.15)}
+.sb-divider{height:1px;background:var(--border);margin:4px 0}
+.sb-stat{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:3px}
+.sb-stat-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px}
+.sb-stat-val{font-family:var(--serif);font-size:21px;font-style:italic;line-height:1}
+.sb-stat-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* ── PANELS ── */
+.panel{display:none;flex-direction:column;height:100%;overflow:hidden}
+.panel.active{display:flex}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 24px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.panel-title{font-family:var(--serif);font-size:20px;font-style:italic}
+.panel-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.panel-body{flex:1;overflow-y:auto;padding:18px 24px}
+.panel-body::-webkit-scrollbar{width:3px}
+.panel-body::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+
+/* ── CHAT ── */
+.chat-msgs{flex:1;overflow-y:auto;padding:20px 28px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth}
+.chat-msgs::-webkit-scrollbar{width:3px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+.msg{display:flex;gap:11px;max-width:760px}
+.msg.user{flex-direction:row-reverse;align-self:flex-end}
+.msg-av{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px}
+.msg.ai .msg-av{background:var(--green-dim);border:1px solid rgba(74,222,128,0.2)}
+.msg.user .msg-av{background:var(--bg3);border:1px solid var(--border)}
+.msg-bubble{padding:11px 14px;border-radius:10px;font-size:13px;line-height:1.75;max-width:620px}
+.msg.ai .msg-bubble{background:var(--bg2);border:1px solid var(--border);border-radius:4px 10px 10px 10px}
+.msg.user .msg-bubble{background:var(--green-dim);border:1px solid rgba(74,222,128,0.2);border-radius:10px 4px 10px 10px}
+.msg-bubble strong{color:var(--green);font-weight:500}
+.msg-bubble em{color:var(--gold);font-style:normal}
+.msg-time{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px;padding:0 3px}
+.thinking{display:flex;gap:4px;align-items:center;padding:11px 14px}
+.thinking span{width:6px;height:6px;border-radius:50%;background:var(--green);opacity:0.3;animation:blink 1.2s ease-in-out infinite}
+.thinking span:nth-child(2){animation-delay:0.2s}
+.thinking span:nth-child(3){animation-delay:0.4s}
+@keyframes blink{0%,100%{opacity:0.2;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}
+.chips{display:flex;flex-wrap:wrap;gap:7px;padding:0 28px 12px;flex-shrink:0}
+.chip{font-size:11.5px;color:var(--text2);border:1px solid var(--border2);border-radius:20px;padding:5px 13px;cursor:pointer;transition:all 0.15s;background:var(--bg2);font-family:var(--font)}
+.chip:hover{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.input-area{padding:10px 20px 16px;border-top:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.file-bar{display:flex;flex-wrap:wrap;gap:5px;padding:0 0 6px}
+.file-chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:3px 9px 3px 7px;font-size:11px;color:var(--text2);max-width:180px}
+.file-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.file-chip-x{cursor:pointer;color:var(--text3);line-height:1;flex-shrink:0}
+.file-chip-x:hover{color:var(--red)}
+.input-row{display:flex;gap:8px;align-items:flex-end;background:var(--bg2);border:1px solid var(--border2);border-radius:11px;padding:8px 12px;transition:border-color 0.15s}
+.input-row:focus-within{border-color:rgba(74,222,128,0.4)}
+.attach-btn{width:32px;height:32px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:all 0.15s;color:var(--text2)}
+.attach-btn:hover{border-color:var(--green);color:var(--green)}
+.chat-input{flex:1;background:transparent;border:none;outline:none;font-family:var(--font);font-size:13px;color:var(--text);resize:none;max-height:120px;line-height:1.6;min-height:20px}
+.chat-input::placeholder{color:var(--text3)}
+.send-btn{width:32px;height:32px;background:var(--green);border:none;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;font-size:14px;color:#0D0F0E;font-weight:700}
+.send-btn:hover{background:#6EE7A0}
+.send-btn:disabled{background:var(--bg4);cursor:not-allowed}
+.msg-img{max-width:100%;border-radius:8px;margin-top:6px;display:block}
+.msg-media{width:100%;border-radius:8px;margin-top:6px;display:block}
+
+/* ── CARDS / TABLES ── */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+.sc-label{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.sc-val{font-family:var(--serif);font-size:24px;font-style:italic;line-height:1}
+.sc-val.green{color:var(--green)}.sc-val.gold{color:var(--gold)}.sc-val.red{color:var(--red)}.sc-val.blue{color:var(--blue)}
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:16px}
+.tbl-hdr{background:var(--bg3);padding:10px 14px}
+.tbl-hdr-title{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold)}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid var(--border)}
+th{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);padding:9px 13px;text-align:left;background:var(--bg3);font-weight:400}
+td{padding:9px 13px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+td input{border:none;background:transparent;width:100%;font-size:12px;font-family:var(--font);color:var(--text);outline:none}
+td input::placeholder{color:var(--text3)}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:500}
+.badge-win{background:rgba(74,222,128,0.12);color:var(--green)}
+.badge-loss{background:var(--red-dim);color:var(--red)}
+.badge-long{background:var(--blue-dim);color:var(--blue)}
+.badge-short{background:var(--gold-dim);color:var(--gold)}
+.empty-state{text-align:center;padding:40px;color:var(--text3)}
+.empty-icon{font-size:28px;margin-bottom:10px}
+
+/* ── TRADE FORM ── */
+.trade-form{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:18px;margin-bottom:16px;display:none}
+.trade-form.open{display:block}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+.form-field label{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:4px}
+.form-field input,.form-field select,.form-field textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-family:var(--font);font-size:12px;color:var(--text);outline:none;transition:border-color 0.15s}
+.form-field input:focus,.form-field select:focus{border-color:rgba(74,222,128,0.4)}
+.form-field select option{background:var(--bg3)}
+.form-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:4px}
+
+/* ── PROGRESS ── */
+.prog-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.prog-card{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:16px}
+.prog-card-title{font-family:var(--mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.week-prog{margin-bottom:11px}
+.week-prog-hdr{display:flex;justify-content:space-between;margin-bottom:5px}
+.week-prog-name{font-size:12px;color:var(--text)}
+.week-prog-pct{font-family:var(--mono);font-size:11px;color:var(--text3)}
+.pb-track{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.pb-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green) 0%,#86EFAC 100%);transition:width 0.6s ease}
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.hm-cell{aspect-ratio:1;border-radius:3px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all 0.15s}
+.hm-cell:hover{transform:scale(1.1)}
+.hm-cell.logged{background:rgba(74,222,128,0.25);border-color:rgba(74,222,128,0.3)}
+.hm-cell.review{background:rgba(240,180,41,0.3);border-color:rgba(240,180,41,0.3)}
+.concept-list{display:flex;flex-direction:column;gap:7px}
+.concept-item{display:flex;align-items:center;gap:9px;padding:7px 11px;background:var(--bg3);border-radius:7px;border:1px solid var(--border)}
+.c-check{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
+.c-check:hover{border-color:var(--green)}
+.c-check.done{background:var(--green);border-color:var(--green)}
+.c-check.done::after{content:'✓';font-size:9px;color:#0D0F0E;font-weight:700}
+.c-name{font-size:12px;color:var(--text2);flex:1}
+.c-week{font-family:var(--mono);font-size:9px;color:var(--text3)}
+
+/* ── QUIZ ── */
+.quiz-wrap{max-width:580px;margin:0 auto;padding:28px}
+.quiz-card{background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:24px;margin-bottom:14px}
+.quiz-badge-txt{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:14px}
+.quiz-q{font-family:var(--serif);font-size:19px;font-style:italic;color:var(--text);line-height:1.5;margin-bottom:20px}
+.quiz-opts{display:flex;flex-direction:column;gap:9px}
+.quiz-opt{padding:11px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:9px;cursor:pointer;font-size:12.5px;color:var(--text2);transition:all 0.15s;text-align:left;font-family:var(--font)}
+.quiz-opt:hover:not(:disabled){border-color:var(--green);color:var(--text);background:var(--green-dim)}
+.quiz-opt.correct{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+.quiz-opt:disabled{cursor:default}
+.quiz-exp{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:12.5px;color:var(--text2);line-height:1.7;margin-top:12px;display:none}
+.quiz-exp.show{display:block}
+.quiz-nav{display:flex;justify-content:space-between;align-items:center}
+.quiz-score-txt{font-family:var(--mono);font-size:11px;color:var(--text3)}
+
+/* ── MARKETS ── */
+.forex-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:20px}
+.session-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+
+/* ── CREATE ── */
+.create-layout{display:flex;gap:14px;height:100%;overflow:hidden;padding:16px 18px}
+.create-controls{width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+.create-output{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+.create-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ct-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:11.5px;color:var(--text2);cursor:pointer;transition:all 0.15s;text-align:center}
+.ct-btn:hover{border-color:var(--green);color:var(--text)}
+.ct-btn.active{border-color:var(--green);background:var(--green-dim);color:var(--green)}
+.create-prompt{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 11px;font-family:var(--font);font-size:12.5px;color:var(--text);resize:none;outline:none;min-height:90px;line-height:1.6;transition:border-color 0.15s}
+.create-prompt:focus{border-color:rgba(74,222,128,0.4)}
+.output-frame-wrap{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:11px;overflow:hidden}
+.output-frame-wrap iframe{width:100%;height:100%;border:none;background:white}
+.output-code-wrap{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:11px;overflow:hidden;position:relative;min-height:200px}
+.output-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--text3);gap:10px}
+.output-textarea{display:none;width:100%;height:100%;background:transparent;border:none;outline:none;font-family:var(--mono);font-size:11.5px;color:var(--text2);padding:14px;resize:none;line-height:1.6}
+.output-hdr{display:flex;justify-content:space-between;align-items:center}
+.section-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text3)}
+</style>
+</head>
+<body>
+
+<!-- ══ API KEY MODAL ══ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-logo">🤖 Trading Coach <span class="modal-tag">AI</span></div>
+    <div class="modal-sub">Pick your AI provider and enter your API key. Saved only in your browser.</div>
+
+    <div class="provider-grid">
+      <div class="provider-card active" id="pc-anthropic" onclick="pickProvider('anthropic')">
+        <div class="icon">🟠</div><div class="name">Anthropic</div><div class="model">Claude Sonnet</div>
+      </div>
+      <div class="provider-card" id="pc-openai" onclick="pickProvider('openai')">
+        <div class="icon">🟢</div><div class="name">OpenAI</div><div class="model">GPT-4o</div>
+      </div>
+      <div class="provider-card" id="pc-google" onclick="pickProvider('google')">
+        <div class="icon">🔵</div><div class="name">Google AI</div><div class="model">Gemini 2.0 Flash (free!)</div>
+      </div>
+      <div class="provider-card" id="pc-openrouter" onclick="pickProvider('openrouter')">
+        <div class="icon">🟣</div><div class="name">OpenRouter</div><div class="model">Any model (free options!)</div>
+      </div>
+    </div>
+
+    <span class="field-label" id="key-label">Anthropic API Key</span>
+    <input class="field-input" id="key-input" type="password" placeholder="sk-ant-api03-...">
+    <div class="field-hint" id="key-hint">Get your key at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com/keys</a></div>
+
+    <div id="or-model-row" style="display:none">
+      <span class="field-label" style="margin-top:8px;display:block">Model (optional)</span>
+      <input class="field-input" id="or-model-input" type="text" placeholder="e.g. meta-llama/llama-3.3-70b-instruct:free">
+      <div class="field-hint">Leave blank for gpt-4o. Free models at <a href="https://openrouter.ai/models?q=:free" target="_blank">openrouter.ai/models</a></div>
+    </div>
+
+    <div class="modal-err" id="modal-err">Please enter a valid API key.</div>
+    <button class="btn-primary" id="start-btn" onclick="startCoaching()">Start Coaching →</button>
+    <div class="modal-secure">🔒 Stored locally — never shared</div>
+    <div style="margin-top:10px;font-size:10.5px;color:var(--text3);line-height:1.6;border-top:1px solid var(--border);padding-top:10px">🖼 <strong style="color:var(--text2)">For image generation:</strong> OpenAI (DALL-E 3) or a separate image API key is needed. Enter it in the Image API Key field in Create Studio.</div>
+  </div>
+</div>
+
+<!-- ══ TOPNAV ══ -->
+<div class="topnav">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <span class="brand-name">Trading Coach</span>
+    <span class="brand-tag">AI</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('chat')">💬 Coach</button>
+    <button class="nav-tab" onclick="showTab('trades')">📊 Trades</button>
+    <button class="nav-tab" onclick="showTab('progress')">📈 Progress</button>
+    <button class="nav-tab" onclick="showTab('quiz')">🧠 Quiz</button>
+    <button class="nav-tab" onclick="showTab('markets')">🌍 Markets</button>
+    <button class="nav-tab" onclick="showTab('general')">💭 General</button>
+    <button class="nav-tab" onclick="showTab('create')">✨ Create</button>
+  </div>
+  <div class="nav-right">
+    <span class="week-badge" id="week-badge">WEEK 1</span>
+    <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="openModal()">🔑 Key</button>
+  </div>
+</div>
+
+<!-- ══ APP BODY ══ -->
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-section">Today</div>
+    <div class="sb-item active" onclick="quickSend('Give me my study tasks for today')"><span>📋</span> Daily Tasks</div>
+    <div class="sb-item" onclick="quickSend('Give me a morning market briefing')"><span>🌅</span> Morning Brief</div>
+    <div class="sb-item" onclick="quickSend('I want to do an end of day review')"><span>🌙</span> EOD Review</div>
+    <div class="sb-divider"></div>
+    <div class="sb-section">Learn</div>
+    <div class="sb-item" onclick="quickSend('Explain candlestick patterns I should know')"><span>🕯</span> Candlesticks</div>
+    <div class="sb-item" onclick="quickSend('Explain market structure and trends')"><span>📉</span> Market Structure</div>
+    <div class="sb-item" onclick="quickSend('Explain risk management and position sizing')"><span>🛡</span> Risk Management</div>
+    <div class="sb-item" onclick="quickSend('What is support and resistance?')"><span>📐</span> S&amp;R Levels</div>
+    <div class="sb-item" onclick="quickSend('Explain order flow and when to learn it')"><span>🌊</span> Order Flow</div>
+    <div class="sb-divider"></div>
+    <div class="sb-section">Tools</div>
+    <div class="sb-item" onclick="quickSend('Help me review my last trade')"><span>🔍</span> Trade Review</div>
+    <div class="sb-item" onclick="quickSend('Check my trading psychology and mindset')"><span>🧘</span> Psychology</div>
+    <div class="sb-item" onclick="quickSend('What are the biggest beginner trading mistakes?')"><span>⚠️</span> Mistakes</div>
+    <div class="sb-divider"></div>
+    <div class="sb-stat">
+      <div class="sb-stat-label">Days Logged</div>
+      <div class="sb-stat-val" id="stat-days" style="color:var(--green)">0</div>
+      <div class="sb-stat-sub">of 28 this month</div>
+    </div>
+    <div class="sb-stat" style="margin-top:6px">
+      <div class="sb-stat-label">Paper Trades</div>
+      <div class="sb-stat-val" id="stat-trades" style="color:var(--gold)">0</div>
+      <div class="sb-stat-sub">this month</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ══ COACH CHAT ══ -->
+    <div class="panel active" id="panel-chat">
+      <div class="chat-msgs" id="chat-msgs">
+        <div class="msg ai">
+          <div class="msg-av">🤖</div>
+          <div>
+            <div class="msg-bubble"><strong>Welcome to your Trading Coach.</strong> I am your AI mentor for this journey — here every day to guide you, answer questions, review your trades, and keep you on track.<br><br>You're on <em>Week 1: How Markets Work</em>. Your goal this week is simple: observe, learn, and build the habit of journaling. No live trades yet.<br><br>What would you like to do today? 📈</div>
+            <div class="msg-time">Today</div>
+          </div>
+        </div>
+      </div>
+      <div class="chips" id="chat-chips">
+        <span class="chip" onclick="quickSend('Give me my study tasks for today')">📋 Today's tasks</span>
+        <span class="chip" onclick="quickSend('Explain how candlesticks work')">🕯 Candlesticks</span>
+        <span class="chip" onclick="quickSend('Quiz me on what I learned this week')">🧠 Quiz me</span>
+        <span class="chip" onclick="quickSend('Check my trading psychology')">🧘 Mindset</span>
+        <span class="chip" onclick="quickSend('What are the biggest beginner mistakes?')">⚠️ Mistakes</span>
+      </div>
+      <div class="input-area">
+        <input type="file" id="chat-file" multiple accept="*/*" style="display:none" onchange="onFileSelect(event,'chat')">
+        <div class="file-bar" id="chat-file-bar"></div>
+        <div class="input-row">
+          <button class="attach-btn" onclick="document.getElementById('chat-file').click()">📎</button>
+          <textarea class="chat-input" id="chat-input" placeholder="Ask your coach anything... or attach a file!" rows="1" onkeydown="onKey(event,'chat')" oninput="autoGrow(this)"></textarea>
+          <button class="send-btn" id="chat-send" onclick="doSend('chat')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TRADE LOG ══ -->
+    <div class="panel" id="panel-trades">
+      <div class="panel-hdr">
+        <div><div class="panel-title">Paper Trade Log</div><div class="panel-sub">Track every practice trade — build the habit before going live</div></div>
+        <button class="btn-primary" style="width:auto;padding:7px 14px;font-size:12px" onclick="toggleForm()">+ New Trade</button>
+      </div>
+      <div class="panel-body">
+        <div class="stat-row">
+          <div class="stat-card"><div class="sc-label">Total Trades</div><div class="sc-val blue" id="s-total">0</div></div>
+          <div class="stat-card"><div class="sc-label">Win Rate</div><div class="sc-val green" id="s-wr">—</div></div>
+          <div class="stat-card"><div class="sc-label">Avg R:R</div><div class="sc-val gold" id="s-rr">—</div></div>
+          <div class="stat-card"><div class="sc-label">Rules Followed</div><div class="sc-val green" id="s-rules">—</div></div>
+        </div>
+        <div class="trade-form" id="trade-form">
+          <div class="form-grid">
+            <div class="form-field"><label>Date</label><input type="date" id="f-date"></div>
+            <div class="form-field"><label>Pair</label><input type="text" id="f-pair" placeholder="EUR/USD"></div>
+            <div class="form-field"><label>Direction</label><select id="f-dir"><option>Long</option><option>Short</option></select></div>
+            <div class="form-field"><label>Entry</label><input type="text" id="f-entry" placeholder="1.0850"></div>
+            <div class="form-field"><label>Stop Loss</label><input type="text" id="f-sl" placeholder="1.0820"></div>
+            <div class="form-field"><label>Take Profit</label><input type="text" id="f-tp" placeholder="1.0910"></div>
+            <div class="form-field"><label>R:R</label><input type="text" id="f-rr" placeholder="1:2"></div>
+            <div class="form-field"><label>Result</label><select id="f-result"><option>Win</option><option>Loss</option><option>Break Even</option><option>Open</option></select></div>
+          </div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr">
+            <div class="form-field"><label>Followed Rules?</label><select id="f-rules"><option>Yes</option><option>No</option><option>Partially</option></select></div>
+            <div class="form-field"><label>Notes</label><input type="text" id="f-notes" placeholder="S&amp;R bounce on 4H..."></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-ghost" onclick="toggleForm()">Cancel</button>
+            <button class="btn-primary" style="width:auto;padding:7px 16px;font-size:12px" onclick="saveTrade()">Save Trade</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table><thead><tr><th>Date</th><th>Pair</th><th>Dir</th><th>Entry</th><th>SL</th><th>TP</th><th>R:R</th><th>Result</th><th>Rules</th><th>Notes</th></tr></thead>
+          <tbody id="trade-tbody"><tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📭</div><p>No trades yet</p></div></td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PROGRESS ══ -->
+    <div class="panel" id="panel-progress">
+      <div class="panel-hdr"><div><div class="panel-title">Your Progress</div><div class="panel-sub">28-day journey tracker</div></div></div>
+      <div class="panel-body">
+        <div class="prog-grid">
+          <div class="prog-card">
+            <div class="prog-card-title">Weekly Completion</div>
+            <div class="week-prog"><div class="week-prog-hdr"><span class="week-prog-name">Week 1 — Markets</span><span class="week-prog-pct" id="wp1">0%</span></div><div class="pb-track"><div class="pb-fill" id="pb1" style="width:0%"></div></div></div>
+            <div class="week-prog"><div class="week-prog-hdr"><span class="week-prog-name">Week 2 — Structure</span><span class="week-prog-pct" id="wp2">0%</span></div><div class="pb-track"><div class="pb-fill" id="pb2" style="width:0%;background:linear-gradient(90deg,var(--gold),#FDE68A)"></div></div></div>
+            <div class="week-prog"><div class="week-prog-hdr"><span class="week-prog-name">Week 3 — Risk Mgmt</span><span class="week-prog-pct" id="wp3">0%</span></div><div class="pb-track"><div class="pb-fill" id="pb3" style="width:0%;background:linear-gradient(90deg,var(--red),#FCA5A5)"></div></div></div>
+            <div class="week-prog"><div class="week-prog-hdr"><span class="week-prog-name">Week 4 — Strategy</span><span class="week-prog-pct" id="wp4">0%</span></div><div class="pb-track"><div class="pb-fill" id="pb4" style="width:0%;background:linear-gradient(90deg,var(--blue),#93C5FD)"></div></div></div>
+          </div>
+          <div class="prog-card">
+            <div class="prog-card-title">28-Day Activity — click a day to mark it</div>
+            <div class="heatmap" id="heatmap"></div>
+            <div style="display:flex;gap:12px;margin-top:8px">
+              <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text3)"><div style="width:9px;height:9px;border-radius:2px;background:rgba(74,222,128,0.25)"></div>Logged</div>
+              <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text3)"><div style="width:9px;height:9px;border-radius:2px;background:rgba(240,180,41,0.3)"></div>Review</div>
+            </div>
+          </div>
+          <div class="prog-card" style="grid-column:1/-1">
+            <div class="prog-card-title">Concepts to master</div>
+            <div class="concept-list" id="concept-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ QUIZ ══ -->
+    <div class="panel" id="panel-quiz">
+      <div class="quiz-wrap">
+        <div class="quiz-card">
+          <div class="quiz-badge-txt" id="quiz-badge">QUESTION 1 OF 10</div>
+          <div class="quiz-q" id="quiz-q">Loading...</div>
+          <div class="quiz-opts" id="quiz-opts"></div>
+          <div class="quiz-exp" id="quiz-exp"></div>
+        </div>
+        <div class="quiz-nav">
+          <span class="quiz-score-txt" id="quiz-score">Score: 0/0</span>
+          <div style="display:flex;gap:7px">
+            <button class="btn-ghost" onclick="nextQ()" id="quiz-next" style="display:none">Next →</button>
+            <button class="btn-primary" onclick="restartQuiz()" id="quiz-restart" style="display:none;width:auto;padding:7px 14px;font-size:12px">Restart</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MARKETS ══ -->
+    <div class="panel" id="panel-markets">
+      <div class="panel-hdr">
+        <div><div class="panel-title">Live Markets</div><div class="panel-sub">Real-time forex rates, sessions & economic calendar</div></div>
+        <button class="btn-ghost" style="font-size:11px;padding:5px 10px" onclick="loadMarkets(true)">↻ Refresh</button>
+      </div>
+      <div class="panel-body">
+        <div class="section-lbl" style="margin-bottom:10px">💱 Live Forex Rates</div>
+        <div class="forex-grid" id="forex-grid">
+          <div class="stat-card"><div class="sc-label">Loading...</div><div class="sc-val blue">—</div></div>
+        </div>
+        <div class="section-lbl" style="margin-bottom:10px">🧭 Session & Sentiment</div>
+        <div class="session-grid">
+          <div class="stat-card" id="fng-card"><div class="sc-label">Fear &amp; Greed (Crypto)</div><div class="sc-val gold" id="fng-val">—</div><div style="font-size:10px;color:var(--text3);margin-top:3px" id="fng-lbl">Loading...</div></div>
+          <div class="stat-card"><div class="sc-label">Trading Session Now</div><div class="sc-val green" id="session-val" style="font-size:16px">—</div><div style="font-size:10px;color:var(--text3);margin-top:3px" id="session-lbl">—</div></div>
+        </div>
+        <div class="section-lbl" style="margin-bottom:10px">📅 Key Weekly Events</div>
+        <div class="tbl-wrap">
+          <table><thead><tr><th>Day</th><th>Event</th><th>Impact</th><th>Currency</th><th>What it means</th></tr></thead>
+          <tbody id="cal-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ GENERAL CHAT ══ -->
+    <div class="panel" id="panel-general">
+      <div class="panel-hdr">
+        <div><div class="panel-title">General Assistant</div><div class="panel-sub">Ask anything — web search enabled</div></div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--green)"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div>Web search on</div>
+      </div>
+      <div class="chat-msgs" id="general-msgs">
+        <div class="msg ai">
+          <div class="msg-av">🌐</div>
+          <div>
+            <div class="msg-bubble"><strong>General Assistant — web access enabled.</strong> Ask me anything outside trading — news, science, math, coding, life advice, anything.<br><br>I can search the web for current info. Just ask! 🔍</div>
+            <div class="msg-time">Today</div>
+          </div>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip" onclick="quickGeneral('What is happening in the world today?')">🌍 World news</span>
+        <span class="chip" onclick="quickGeneral('Give me tips for staying productive and focused')">🎯 Productivity</span>
+        <span class="chip" onclick="quickGeneral('What are some good books for self improvement?')">📚 Books</span>
+        <span class="chip" onclick="quickGeneral('Explain quantum computing simply')">⚛️ Science</span>
+      </div>
+      <div class="input-area">
+        <input type="file" id="general-file" multiple accept="*/*" style="display:none" onchange="onFileSelect(event,'general')">
+        <div class="file-bar" id="general-file-bar"></div>
+        <div class="input-row">
+          <button class="attach-btn" onclick="document.getElementById('general-file').click()">📎</button>
+          <textarea class="chat-input" id="general-input" placeholder="Ask anything or attach a file..." rows="1" onkeydown="onKey(event,'general')" oninput="autoGrow(this)"></textarea>
+          <button class="send-btn" id="general-send" onclick="doSend('general')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CREATE ══ -->
+    <div class="panel" id="panel-create">
+      <div class="panel-hdr"><div><div class="panel-title">Create Studio</div><div class="panel-sub">Generate diagrams, HTML pages, charts, docs, SVG, code, CSV and more</div></div></div>
+      <div class="create-layout">
+        <div class="create-controls">
+          <div>
+            <div class="section-lbl" style="margin-bottom:7px">What to create</div>
+            <div class="create-type-grid">
+              <div class="ct-btn active" id="ct-diagram" onclick="pickType('diagram')">📊 Diagram</div>
+              <div class="ct-btn" id="ct-html" onclick="pickType('html')">🌐 HTML Page</div>
+              <div class="ct-btn" id="ct-chart" onclick="pickType('chart')">📈 Chart</div>
+              <div class="ct-btn" id="ct-svg" onclick="pickType('svg')">🎨 SVG Art</div>
+              <div class="ct-btn" id="ct-doc" onclick="pickType('doc')">📄 Document</div>
+              <div class="ct-btn" id="ct-pdf" onclick="pickType('pdf')">📑 PDF-ready</div>
+              <div class="ct-btn" id="ct-csv" onclick="pickType('csv')">📊 CSV Data</div>
+              <div class="ct-btn" id="ct-code" onclick="pickType('code')">💻 Code File</div>
+              <div class="ct-btn" id="ct-image" onclick="pickType('image')" style="grid-column:1/-1">🖼 AI Image (PNG)</div>
+            </div>
+          </div>
+          <div>
+            <div class="section-lbl" style="margin-bottom:6px">Describe what you want</div>
+            <textarea class="create-prompt" id="create-prompt" placeholder="e.g. A flowchart showing the 4 stages of a trade setup..."></textarea>
+          </div>
+          <div>
+            <div class="section-lbl" style="margin-bottom:6px">Quick prompts</div>
+            <div id="quick-create-prompts" style="display:flex;flex-direction:column;gap:5px"></div>
+          </div>
+          <div id="img-key-row" style="display:none">
+            <div class="section-lbl" style="margin-bottom:5px">Image API Key (OpenAI)</div>
+            <input type="password" id="img-api-key" class="create-prompt" style="min-height:auto;padding:8px 10px;font-size:12px" placeholder="sk-... (OpenAI key for DALL-E 3)">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Get free credits at <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--green)">platform.openai.com</a></div>
+          </div>
+          <button class="btn-primary" id="create-btn" onclick="runCreate()">✨ Generate</button>
+          <button class="btn-ghost" id="dl-btn" onclick="dlOutput()" style="display:none">⬇ Download File</button>
+        </div>
+        <div class="create-output">
+          <div class="output-hdr">
+            <span class="section-lbl" id="output-lbl">Output</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn-ghost" style="font-size:11px;padding:3px 9px" onclick="copyOutput()" id="copy-btn">Copy</button>
+              <button class="btn-ghost" style="font-size:11px;padding:3px 9px" onclick="dlOutput()">⬇ Download</button>
+            </div>
+          </div>
+          <div class="output-frame-wrap" id="output-preview" style="display:none"><iframe id="output-frame"></iframe></div>
+          <div class="output-code-wrap" id="output-code">
+            <div class="output-placeholder" id="output-ph"><div style="font-size:32px">✨</div><div style="font-size:13px">Your creation appears here</div><div style="font-size:11px;color:var(--text3)">Pick a type, describe it, hit Generate</div></div>
+            <div id="output-img-wrap" style="display:none;width:100%;height:100%;display:none;align-items:center;justify-content:center;padding:16px;flex-direction:column;gap:12px">
+              <img id="output-img" style="max-width:100%;max-height:calc(100% - 60px);border-radius:10px;object-fit:contain" src="" alt="">
+              <a id="output-img-dl" href="" download="generated-image.png" class="btn-ghost" style="font-size:12px;padding:6px 16px;text-decoration:none">⬇ Download PNG</a>
+            </div>
+            <textarea class="output-textarea" id="output-ta"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .main -->
+</div><!-- end .app-body -->
+
+<script>
+// ═══════════════════ STATE ═══════════════════
+const S = {
+  trades: JSON.parse(localStorage.getItem('tc_trades')||'[]'),
+  concepts: JSON.parse(localStorage.getItem('tc_concepts')||'{}'),
+  days: JSON.parse(localStorage.getItem('tc_days')||'{}'),
+  week: parseInt(localStorage.getItem('tc_week')||'1'),
+};
+function persist() {
+  localStorage.setItem('tc_trades', JSON.stringify(S.trades));
+  localStorage.setItem('tc_concepts', JSON.stringify(S.concepts));
+  localStorage.setItem('tc_days', JSON.stringify(S.days));
+  localStorage.setItem('tc_week', S.week);
+}
+
+// ═══════════════════ PROVIDER ═══════════════════
+const PROVIDER_INFO = {
+  anthropic:  { label:'Anthropic API Key',   ph:'sk-ant-api03-...',  hint:'Get key at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com/keys</a>' },
+  openai:     { label:'OpenAI API Key',       ph:'sk-...',            hint:'Get key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>' },
+  google:     { label:'Google AI API Key',    ph:'AIza...',           hint:'Get free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>' },
+  openrouter: { label:'OpenRouter API Key',   ph:'sk-or-v1-...',      hint:'Get key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> — free models available' },
+};
+let curProvider = localStorage.getItem('tc_provider') || 'anthropic';
+
+function pickProvider(p) {
+  curProvider = p;
+  document.querySelectorAll('.provider-card').forEach(function(el) { el.classList.remove('active'); });
+  document.getElementById('pc-'+p).classList.add('active');
+  document.getElementById('key-label').textContent = PROVIDER_INFO[p].label;
+  document.getElementById('key-input').placeholder = PROVIDER_INFO[p].ph;
+  document.getElementById('key-hint').innerHTML = PROVIDER_INFO[p].hint;
+  document.getElementById('key-input').value = localStorage.getItem('tc_key_'+p) || '';
+  document.getElementById('or-model-row').style.display = p === 'openrouter' ? 'block' : 'none';
+  document.getElementById('modal-err').style.display = 'none';
+}
+
+function startCoaching() {
+  var key = document.getElementById('key-input').value.trim();
+  if (!key) {
+    document.getElementById('modal-err').style.display = 'block';
+    document.getElementById('modal-err').textContent = 'Please enter your API key.';
+    return;
+  }
+  localStorage.setItem('tc_key_'+curProvider, key);
+  localStorage.setItem('tc_provider', curProvider);
+  if (curProvider === 'openrouter') {
+    var m = document.getElementById('or-model-input').value.trim();
+    if (m) localStorage.setItem('tc_or_model', m);
+  }
+  document.getElementById('modal').style.display = 'none';
+}
+
+function openModal() {
+  pickProvider(curProvider);
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function getKey() { return localStorage.getItem('tc_key_'+curProvider) || ''; }
+function getProvider() { return localStorage.getItem('tc_provider') || 'anthropic'; }
+
+// Init modal
+pickProvider(curProvider);
+if (!getKey()) {
+  document.getElementById('modal').style.display = 'flex';
+} else {
+  document.getElementById('modal').style.display = 'none';
+}
+
+// ═══════════════════ TABS ═══════════════════
+var TABS = ['chat','trades','progress','quiz','markets','general','create'];
+function showTab(t) {
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('panel-'+t).classList.add('active');
+  var idx = TABS.indexOf(t);
+  if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  if (t === 'progress') renderProgress();
+  if (t === 'quiz') renderQuiz();
+  if (t === 'trades') renderTrades();
+  if (t === 'markets') loadMarkets(false);
+}
+
+// ═══════════════════ FORMAT MSG ═══════════════════
+function fmt(text) {
+  // code blocks
+  text = text.replace(/```[\w]*\n?([\s\S]*?)```/g, function(_,c) {
+    return '<pre style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px;overflow-x:auto;font-family:var(--mono);font-size:11px;color:var(--green);margin:6px 0;line-height:1.5;">'+c.trim().replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>';
+  });
+  // inline code
+  text = text.replace(/`([^`]+)`/g, '<code style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:11px;color:var(--gold);">$1</code>');
+  // bold
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // italic
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // markdown links [text](url)
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, function(_,label,url) {
+    return '<a href="'+url+'" target="_blank" rel="noopener" style="color:var(--green);font-weight:500;text-decoration:underline;text-underline-offset:2px;">'+label+' ↗</a>';
+  });
+  // bare urls
+  text = text.replace(/(https?:\/\/[^\s<>"'\]]+)/g, function(url) {
+    return '<a href="'+url+'" target="_blank" rel="noopener" style="color:var(--green);text-decoration:underline;text-underline-offset:2px;word-break:break-all;">'+url+'</a>';
+  });
+  // bullets
+  text = text.replace(/^[-•] (.+)$/gm, '<div style="display:flex;gap:7px;margin:2px 0"><span style="color:var(--green);flex-shrink:0;margin-top:3px">▸</span><span>$1</span></div>');
+  // numbered
+  text = text.replace(/^(\d+)\. (.+)$/gm, '<div style="display:flex;gap:7px;margin:2px 0"><span style="color:var(--gold);font-family:var(--mono);font-size:11px;flex-shrink:0;min-width:16px;margin-top:3px">$1.</span><span>$2</span></div>');
+  // headers
+  text = text.replace(/^### (.+)$/gm, '<div style="font-size:12.5px;font-weight:600;color:var(--text);margin:8px 0 3px;border-bottom:1px solid var(--border);padding-bottom:3px">$1</div>');
+  text = text.replace(/^## (.+)$/gm, '<div style="font-size:13.5px;font-weight:600;color:var(--text);margin:10px 0 4px">$1</div>');
+  text = text.replace(/^# (.+)$/gm, '<div style="font-size:14.5px;font-weight:600;color:var(--green);margin:10px 0 4px">$1</div>');
+  // line breaks
+  text = text.replace(/\n\n/g, '<br><br>');
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+// ═══════════════════ CHAT ENGINE ═══════════════════
+var chatHistory = [];
+var generalHistory = [];
+
+var COACH_SYS = 'You are an expert trading coach for a complete beginner wanting to become a full-time forex trader. They are in Month 1, Week '+S.week+' of a 4-week plan:\n- Week 1: How markets work — candlesticks, price action, trends\n- Week 2: Market structure & key levels — S&R, higher highs/lows, multi-timeframe\n- Week 3: Risk management — position sizing, stop losses, 1-2% rule\n- Week 4: Build a strategy — combining weeks 1-3 into a rule-based setup\nStudent: complete beginner, 3-5 hrs/day, paper trading only, focused on EUR/USD.\nBe warm, direct, and practical. Keep responses concise (2-4 paragraphs). Use **bold** for key terms. When mentioning websites always use markdown links: [Name](url). Format lists with dashes.';
+
+var GENERAL_SYS = 'You are a helpful general-purpose AI assistant. Be conversational, clear and concise. Use **bold** for emphasis. Always format website links as markdown: [Name](url). When the user asks about current events, news, or time-sensitive info, note that your knowledge has a cutoff and suggest they verify. Format bullet lists with dashes. Today: '+new Date().toDateString();
+
+async function callAPI(messages, system, maxTokens) {
+  var key = getKey();
+  var provider = getProvider();
+  if (!key) { openModal(); throw new Error('No API key'); }
+  maxTokens = maxTokens || 1000;
+
+  var resp;
+  if (provider === 'anthropic') {
+    resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,system:system,messages:messages})
+    });
+    if (resp.status===401||resp.status===403){openModal();throw new Error('Invalid API key');}
+    if (!resp.ok){var e=await resp.json().catch(function(){return{};});throw new Error(e.error&&e.error.message?e.error.message:'API error '+resp.status);}
+    var d = await resp.json();
+    return d.content&&d.content[0]&&d.content[0].text ? d.content[0].text : 'Sorry, no response.';
+  } else if (provider==='openai'||provider==='openrouter') {
+    var model = provider==='openai' ? 'gpt-4o' : (localStorage.getItem('tc_or_model')||'openai/gpt-4o');
+    var endpoint = provider==='openai' ? 'https://api.openai.com/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+    var msgs = [{role:'system',content:system}].concat(messages);
+    resp = await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:model,max_tokens:maxTokens,messages:msgs})});
+    if (resp.status===401||resp.status===403){openModal();throw new Error('Invalid API key');}
+    if (!resp.ok){var e2=await resp.json().catch(function(){return{};});throw new Error(e2.error&&e2.error.message?e2.error.message:'API error '+resp.status);}
+    var d2=await resp.json();
+    return d2.choices&&d2.choices[0]&&d2.choices[0].message?d2.choices[0].message.content:'Sorry, no response.';
+  } else if (provider==='google') {
+    var gmsgs = messages.map(function(m){
+      return {role:m.role==='assistant'?'model':'user', parts:Array.isArray(m.content)?m.content.map(function(c){return c.type==='text'?{text:c.text}:c.type==='image_url'?{inline_data:{mime_type:c.image_url.url.split(';')[0].split(':')[1],data:c.image_url.url.split(',')[1]}}:{text:JSON.stringify(c)};}):[{text:m.content}]};
+    });
+    resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+key,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({system_instruction:{parts:[{text:system}]},contents:gmsgs})
+    });
+    if (resp.status===400||resp.status===401||resp.status===403){openModal();throw new Error('Invalid API key');}
+    if (!resp.ok){var e3=await resp.json().catch(function(){return{};});throw new Error(e3.error&&e3.error.message?e3.error.message:'API error '+resp.status);}
+    var d3=await resp.json();
+    var parts=d3.candidates&&d3.candidates[0]&&d3.candidates[0].content&&d3.candidates[0].content.parts;
+    return parts&&parts.length?parts.find(function(p){return p.text;}).text:'Sorry, no response.';
+  }
+  throw new Error('Unknown provider');
+}
+
+// ═══════════════════ FILE HANDLING ═══════════════════
+var pending = {chat:[], general:[]};
+
+function onFileSelect(ev, ch) {
+  var files = Array.from(ev.target.files);
+  files.forEach(function(f) {
+    var ext = f.name.split('.').pop().toLowerCase();
+    var mime = f.type || 'application/octet-stream';
+    var isImg = ['jpg','jpeg','png','gif','webp','bmp','tiff','tif','ico','avif','heic','heif','svg'].includes(ext) || mime.startsWith('image/');
+    var isPDF = ext==='pdf' || mime==='application/pdf';
+    var isVideo = ['mp4','mov','avi','webm','mkv','m4v','flv','wmv','ogv'].includes(ext) || mime.startsWith('video/');
+    var isAudio = ['mp3','wav','ogg','m4a','aac','flac','opus','weba'].includes(ext) || mime.startsWith('audio/');
+    var isText = ['txt','csv','json','js','py','html','css','md','ts','xml','yaml','yml','toml','sh','sql','c','cpp','java','php','rb','go','rs','swift','kt'].includes(ext);
+    var isDoc = ['doc','docx','xls','xlsx','ppt','pptx','rtf'].includes(ext);
+
+    if (isImg) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var actualMime = mime.startsWith('image/') ? mime : 'image/'+ext;
+        if (ext==='svg') actualMime = 'image/svg+xml';
+        pending[ch].push({name:f.name, kind:'image', mime:actualMime, b64:e.target.result.split(',')[1], size:f.size});
+        renderFilePreviews(ch);
+      };
+      reader.readAsDataURL(f);
+    } else if (isPDF) {
+      var reader2 = new FileReader();
+      reader2.onload = function(e) {
+        pending[ch].push({name:f.name, kind:'pdf', mime:'application/pdf', b64:e.target.result.split(',')[1], size:f.size});
+        renderFilePreviews(ch);
+      };
+      reader2.readAsDataURL(f);
+    } else if (isVideo) {
+      pending[ch].push({name:f.name, kind:'video', url:URL.createObjectURL(f), size:f.size});
+      renderFilePreviews(ch);
+    } else if (isAudio) {
+      pending[ch].push({name:f.name, kind:'audio', url:URL.createObjectURL(f), size:f.size});
+      renderFilePreviews(ch);
+    } else if (isDoc) {
+      // Docs cannot be read as plain text well — send as base64 with description
+      var reader3 = new FileReader();
+      reader3.onload = function(e) {
+        pending[ch].push({name:f.name, kind:'doc', mime:mime, b64:e.target.result.split(',')[1], size:f.size});
+        renderFilePreviews(ch);
+      };
+      reader3.readAsDataURL(f);
+    } else if (isText) {
+      var reader4 = new FileReader();
+      reader4.onload = function(e) {
+        pending[ch].push({name:f.name, kind:'text', text:e.target.result, size:f.size});
+        renderFilePreviews(ch);
+      };
+      reader4.readAsText(f);
+    } else {
+      // Unknown type — try reading as text first, fallback to binary info
+      var reader5 = new FileReader();
+      reader5.onload = function(e) {
+        pending[ch].push({name:f.name, kind:'text', text:e.target.result, size:f.size});
+        renderFilePreviews(ch);
+      };
+      reader5.onerror = function() {
+        pending[ch].push({name:f.name, kind:'unknown', size:f.size});
+        renderFilePreviews(ch);
+      };
+      reader5.readAsText(f);
+    }
+  });
+  ev.target.value = '';
+}
+
+function renderFilePreviews(ch) {
+  var bar = document.getElementById(ch+'-file-bar');
+  bar.innerHTML = pending[ch].map(function(f,i) {
+    var icons = {image:'🖼',pdf:'📑',video:'🎬',audio:'🎵',text:'📄'};
+    return '<div class="file-chip"><span style="font-size:13px">'+(icons[f.kind]||'📎')+'</span><span class="file-chip-name">'+f.name+'</span><span class="file-chip-x" onclick="rmFile(\''+ch+'\','+i+')">✕</span></div>';
+  }).join('');
+}
+
+function rmFile(ch, i) { pending[ch].splice(i,1); renderFilePreviews(ch); }
+
+function buildUserContent(text, atts, provider) {
+  if (!atts.length) return text;
+  var parts = [];
+  atts.forEach(function(a) {
+    if (a.kind==='image') {
+      // Vision support: anthropic, openai, openrouter (only vision-capable models)
+      if (provider==='anthropic') {
+        parts.push({type:'image',source:{type:'base64',media_type:a.mime,data:a.b64}});
+        parts.push({type:'text',text:'[Image file: '+a.name+' — please analyze this image]'});
+      } else if (provider==='openai') {
+        parts.push({type:'image_url',image_url:{url:'data:'+a.mime+';base64,'+a.b64}});
+      } else if (provider==='openrouter') {
+        // OpenRouter: only add image if model likely supports vision
+        // Use text description as fallback too so non-vision models still work
+        parts.push({type:'image_url',image_url:{url:'data:'+a.mime+';base64,'+a.b64,detail:'auto'}});
+        parts.push({type:'text',text:'[Attached image: '+a.name+' — if you can see images, please analyze it. If not, let me know and I will describe it.]'});
+      } else {
+        // Google — uses inline_data format
+        parts.push({type:'text',text:'[Image: '+a.name+']'});
+        parts.push({type:'inline_data',inline_data:{mime_type:a.mime,data:a.b64}});
+      }
+    } else if (a.kind==='pdf') {
+      if (provider==='anthropic') {
+        parts.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:a.b64}});
+        parts.push({type:'text',text:'[PDF: '+a.name+' — please read and analyze this document]'});
+      } else {
+        // For non-Anthropic: cannot send PDF binary, extract info
+        parts.push({type:'text',text:'[PDF file attached: '+a.name+'. Note: I cannot directly read PDF binary via this provider, but I can help if you paste the text content, or switch to Anthropic provider for native PDF reading.]'});
+      }
+    } else if (a.kind==='doc') {
+      parts.push({type:'text',text:'[Office document: '+a.name+'. Note: for best results with Word/Excel/PowerPoint files, copy and paste the text content directly into the chat, or switch to Anthropic provider.]'});
+    } else if (a.kind==='audio') {
+      } else if (a.kind==='audio') {
+      parts.push({type:'text',text:'[Audio file: '+a.name+'. You have attached an audio file. Describe its contents or paste a transcript and I will help.'});
+    } else if (a.kind==='video') {
+      } else if (a.kind==='video') {
+      parts.push({type:'text',text:'[Video file: '+a.name+'. You have attached a video. Describe its contents or share a screenshot for image analysis.'});
+    } else if (a.text) {
+      var truncated = a.text.length > 10000 ? a.text.slice(0,10000)+'\n...[truncated, '+Math.round(a.text.length/1000)+'KB total]' : a.text;
+      parts.push({type:'text',text:'[File: '+a.name+']\n```\n'+truncated+'\n```'});
+    } else {
+      parts.push({type:'text',text:'[Unknown file: '+a.name+' ('+Math.round((a.size||0)/1024)+'KB) — I cannot process this file type directly. Please describe what you need help with.]'});
+    }
+  });
+  parts.push({type:'text',text:text});
+  return parts;
+}
+
+function renderMediaPreviews(atts) {
+  return atts.map(function(a) {
+    if (a.kind==='image' && a.b64) return '<img class="msg-img" src="data:'+a.mime+';base64,'+a.b64+'" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:6px;display:block">';
+    if (a.kind==='video' && a.url) return '<video class="msg-media" controls src="'+a.url+'" style="width:100%;border-radius:8px;margin-top:6px;display:block"></video>';
+    if (a.kind==='audio' && a.url) return '<audio class="msg-media" controls src="'+a.url+'" style="width:100%;margin-top:6px;display:block"></audio>';
+    var icons = {pdf:'📑',doc:'📄',text:'📝',unknown:'📎'};
+    return '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;margin-top:6px"><span>'+(icons[a.kind]||'📎')+'</span><span style="font-size:12px;color:var(--text2)">'+a.name+'</span></div>';
+  }).join('');
+}
+
+// ═══════════════════ SEND MESSAGE ═══════════════════
+function addMsg(container, role, text, mediaPreviews) {
+  var el = document.createElement('div');
+  el.className = 'msg '+role;
+  var t = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  var av = role==='ai' ? (container==='general-msgs'?'🌐':'🤖') : '👤';
+  el.innerHTML = '<div class="msg-av">'+av+'</div><div><div class="msg-bubble">'+fmt(text)+(mediaPreviews||'')+'</div><div class="msg-time">'+t+'</div></div>';
+  document.getElementById(container).appendChild(el);
+  el.scrollIntoView({behavior:'smooth',block:'end'});
+}
+
+function addThinking(container, id) {
+  var el = document.createElement('div');
+  el.className = 'msg ai'; el.id = id;
+  el.innerHTML = '<div class="msg-av">🤖</div><div class="msg-bubble thinking"><span></span><span></span><span></span></div>';
+  document.getElementById(container).appendChild(el);
+  el.scrollIntoView({behavior:'smooth',block:'end'});
+}
+
+async function doSend(ch) {
+  var inputId = ch+'-input';
+  var text = document.getElementById(inputId).value.trim();
+  var atts = pending[ch].slice();
+  if (!text && !atts.length) return;
+
+  document.getElementById(inputId).value = '';
+  document.getElementById(inputId).style.height = 'auto';
+  document.getElementById(ch+'-send').disabled = true;
+  pending[ch] = [];
+  renderFilePreviews(ch);
+
+  var provider = getProvider();
+  var displayText = text || '📎 '+atts.map(function(a){return a.name;}).join(', ');
+  var media = renderMediaPreviews(atts);
+  var container = ch==='chat' ? 'chat-msgs' : 'general-msgs';
+
+  addMsg(container, 'user', displayText, media);
+  if (ch==='chat') document.getElementById('chat-chips').style.display = 'none';
+
+  if (ch==='chat') {
+    var d = new Date().toDateString();
+    S.days[d] = true;
+    document.getElementById('stat-days').textContent = Object.keys(S.days).length;
+    persist();
+  }
+
+  var thinkId = ch+'-thinking';
+  addThinking(container, thinkId);
+
+  try {
+    var userContent = buildUserContent(text || 'Please analyze the attached file(s).', atts, provider);
+    var hist = ch==='chat' ? chatHistory : generalHistory;
+    var sys = ch==='chat' ? COACH_SYS : GENERAL_SYS;
+    hist.push({role:'user', content:userContent});
+    var reply = await callAPI(hist, sys, 1000);
+    hist.push({role:'assistant', content:reply});
+    if (hist.length > 20) hist.splice(0, hist.length-20);
+    document.getElementById(thinkId) && document.getElementById(thinkId).remove();
+    addMsg(container, 'ai', reply);
+  } catch(e) {
+    document.getElementById(thinkId) && document.getElementById(thinkId).remove();
+    var msg = e.message&&e.message.includes('Invalid API key')
+      ? '🔑 Invalid API key — click the Key button top right to update it.'
+      : e.message&&e.message.includes('credit')
+      ? '💳 Your API account has no credits. Please top up at your provider console.'
+      : e.message&&(e.message.includes('image input')||e.message.includes('vision')||e.message.includes('multimodal')||e.message.includes('endpoints found'))
+      ? '🖼 This model does not support image analysis. Try switching to **Anthropic** (Claude), **OpenAI** (GPT-4o), or a vision-capable OpenRouter model like `google/gemini-2.0-flash-exp:free`.'
+      : '⚠️ Error: '+(e.message||'Something went wrong.');
+    addMsg(container, 'ai', msg);
+  }
+  document.getElementById(ch+'-send').disabled = false;
+}
+
+function onKey(e, ch) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); doSend(ch); } }
+function autoGrow(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+function quickSend(msg) { document.getElementById('chat-input').value=msg; showTab('chat'); doSend('chat'); }
+function quickGeneral(msg) { document.getElementById('general-input').value=msg; showTab('general'); doSend('general'); }
+
+// ═══════════════════ TRADE LOG ═══════════════════
+function toggleForm() {
+  var f = document.getElementById('trade-form');
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+}
+
+function saveTrade() {
+  var t = {id:Date.now(),date:document.getElementById('f-date').value,pair:document.getElementById('f-pair').value||'EUR/USD',dir:document.getElementById('f-dir').value,entry:document.getElementById('f-entry').value,sl:document.getElementById('f-sl').value,tp:document.getElementById('f-tp').value,rr:document.getElementById('f-rr').value,result:document.getElementById('f-result').value,rules:document.getElementById('f-rules').value,notes:document.getElementById('f-notes').value};
+  S.trades.push(t);
+  document.getElementById('stat-trades').textContent = S.trades.length;
+  persist(); toggleForm(); renderTrades();
+  ['f-pair','f-entry','f-sl','f-tp','f-rr','f-notes'].forEach(function(id){document.getElementById(id).value='';});
+}
+
+function renderTrades() {
+  var tbody = document.getElementById('trade-tbody');
+  if (!S.trades.length) { tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📭</div><p>No trades yet</p></div></td></tr>'; document.getElementById('s-total').textContent='0'; return; }
+  var wins=S.trades.filter(function(t){return t.result==='Win';}).length;
+  var closed=S.trades.filter(function(t){return t.result==='Win'||t.result==='Loss';}).length;
+  var rulesY=S.trades.filter(function(t){return t.rules==='Yes';}).length;
+  document.getElementById('s-total').textContent=S.trades.length;
+  document.getElementById('s-wr').textContent=closed?Math.round(wins/closed*100)+'%':'—';
+  document.getElementById('s-rules').textContent=S.trades.length?Math.round(rulesY/S.trades.length*100)+'%':'—';
+  tbody.innerHTML=[...S.trades].reverse().map(function(t){
+    return '<tr><td style="font-family:var(--mono);font-size:10px;color:var(--text3)">'+t.date+'</td><td style="color:var(--text)">'+t.pair+'</td><td><span class="badge '+(t.dir==='Long'?'badge-long':'badge-short')+'">'+t.dir+'</span></td><td>'+( t.entry||'—')+'</td><td style="color:var(--red)">'+(t.sl||'—')+'</td><td style="color:var(--green)">'+(t.tp||'—')+'</td><td style="font-family:var(--mono);font-size:10px">'+(t.rr||'—')+'</td><td><span class="badge '+(t.result==='Win'?'badge-win':t.result==='Loss'?'badge-loss':'')+'">'+(t.result||'—')+'</span></td><td style="color:'+(t.rules==='Yes'?'var(--green)':t.rules==='No'?'var(--red)':'var(--gold)')+'">'+t.rules+'</td><td style="color:var(--text3);font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(t.notes||'—')+'</td></tr>';
+  }).join('');
+}
+
+// ═══════════════════ PROGRESS ═══════════════════
+var CONCEPTS = [
+  {id:'c1',name:'What a candlestick represents',w:1},{id:'c2',name:'Difference between bid & ask',w:1},
+  {id:'c3',name:'Trending vs ranging market',w:1},{id:'c4',name:'How to read multiple timeframes',w:1},
+  {id:'c5',name:'Higher highs & higher lows (bullish)',w:2},{id:'c6',name:'Lower highs & lower lows (bearish)',w:2},
+  {id:'c7',name:'Drawing support & resistance',w:2},{id:'c8',name:'Multi-timeframe analysis',w:2},
+  {id:'c9',name:'Risk/reward ratio (1:2, 1:3)',w:3},{id:'c10',name:'Position sizing calculation',w:3},
+  {id:'c11',name:'The 1–2% rule per trade',w:3},{id:'c12',name:'Stop loss placement logic',w:3},
+  {id:'c13',name:'Trend + S&R combo setup',w:4},{id:'c14',name:'Writing strategy rules plainly',w:4},
+  {id:'c15',name:'Trade journaling & self-review',w:4},
+];
+
+function renderProgress() {
+  var hm = document.getElementById('heatmap');
+  hm.innerHTML = '';
+  for (var i=1;i<=28;i++) {
+    var cell = document.createElement('div');
+    cell.className = 'hm-cell'+(i%7===0?' review':S.days['day'+i]?' logged':'');
+    cell.title = 'Day '+i;
+    (function(day){ cell.onclick = function(){S.days['day'+day]=!S.days['day'+day];persist();renderProgress();document.getElementById('stat-days').textContent=Object.keys(S.days).length;}; })(i);
+    hm.appendChild(cell);
+  }
+  var cl = document.getElementById('concept-list');
+  cl.innerHTML = CONCEPTS.map(function(c){
+    return '<div class="concept-item"><div class="c-check'+(S.concepts[c.id]?' done':'')+'" onclick="toggleConcept(\''+c.id+'\')"></div><span class="c-name">'+c.name+'</span><span class="c-week">W'+c.w+'</span></div>';
+  }).join('');
+  for (var w=1;w<=4;w++) {
+    var wc=CONCEPTS.filter(function(c){return c.w===w;});
+    var done=wc.filter(function(c){return S.concepts[c.id];}).length;
+    var pct=Math.round(done/wc.length*100);
+    document.getElementById('wp'+w).textContent=pct+'%';
+    document.getElementById('pb'+w).style.width=pct+'%';
+  }
+}
+
+function toggleConcept(id) { S.concepts[id]=!S.concepts[id]; persist(); renderProgress(); }
+
+// ═══════════════════ QUIZ ═══════════════════
+var QS = [
+  {q:'What does a green (bullish) candlestick indicate?',opts:['Price closed lower than open','Price closed higher than open','Volume was high','Price did not move'],a:1,exp:'A green/bullish candle means the closing price was higher than the opening price — buyers were in control.'},
+  {q:'What is the "bid price" in forex?',opts:['The price you buy at','The price the broker pays you (you sell at)','The average daily price','The central bank price'],a:1,exp:'The bid is what the broker pays you — the price you sell at. The ask is what you pay when buying.'},
+  {q:'Lower highs and lower lows describe a...',opts:['Ranging market','Bullish trend','Bearish trend','Consolidation'],a:2,exp:'Lower highs and lower lows confirm a downtrend. Each rally fails to reach the previous high.'},
+  {q:'$1,000 account, 2% rule — max loss per trade?',opts:['$20','$200','$100','$50'],a:0,exp:'2% of $1,000 = $20 maximum risk per trade. This protects your account from a few bad trades.'},
+  {q:'A 1:3 Risk:Reward ratio means...',opts:['Risk $3 to make $1','Risk $1 to make $3','Win 3 of every 4 trades','Use 3x leverage'],a:1,exp:'1:3 = risk $1 to target $3. Even with only 34% win rate you break even — R:R matters more than win rate.'},
+  {q:'Where should a stop loss go on a long trade?',opts:['Random point below entry','Below nearest swing low or key support','Always exactly 20 pips','Above entry price'],a:1,exp:'Stop losses go at logical levels — below a swing low or support means price has proven you wrong.'},
+  {q:'What is "support" in price action?',opts:['A level where selling increases','A level where buying appears and price bounces','The highest price in a trend','A government price floor'],a:1,exp:'Support is a price level where buyers historically step in, causing price to reverse or stabilize.'},
+  {q:'Why paper trade before going live?',opts:["It's required by law",'To build habits and test strategy without financial risk','Paper trading has better spreads','Brokers require it'],a:1,exp:'Paper trading builds discipline, tests your strategy, and reveals your emotional reactions without financial consequences.'},
+  {q:'"Higher timeframe bias" means...',opts:['Trading only the daily chart','Using the higher TF to determine trend before lower TF entries','Ignoring lower timeframes','A type of broker manipulation'],a:1,exp:'Check the daily/weekly for dominant trend direction, then look for entries on lower timeframes (4H, 1H) that align with it.'},
+  {q:'Risk $50, target $100 — what is the R:R?',opts:['1:1','1:2','2:1','1:3'],a:1,exp:'$50 risk / $100 reward = 1:2 R:R. You only need to be right 34% of the time to be profitable with 1:2.'},
+];
+var qIdx=0, qScore=0, qTotal=0, qAnswered=false;
+
+function renderQuiz() {
+  var q=QS[qIdx];
+  document.getElementById('quiz-badge').textContent='QUESTION '+(qIdx+1)+' OF '+QS.length;
+  document.getElementById('quiz-q').textContent=q.q;
+  document.getElementById('quiz-exp').className='quiz-exp';
+  document.getElementById('quiz-next').style.display='none';
+  document.getElementById('quiz-restart').style.display='none';
+  qAnswered=false;
+  document.getElementById('quiz-opts').innerHTML=q.opts.map(function(o,i){return '<button class="quiz-opt" onclick="answerQ('+i+')">'+o+'</button>';}).join('');
+  document.getElementById('quiz-score').textContent='Score: '+qScore+'/'+qTotal;
+}
+
+function answerQ(i) {
+  if (qAnswered) return; qAnswered=true; qTotal++;
+  var q=QS[qIdx]; var opts=document.querySelectorAll('.quiz-opt');
+  opts.forEach(function(o){o.disabled=true;});
+  opts[q.a].classList.add('correct');
+  if (i!==q.a) opts[i].classList.add('wrong');
+  if (i===q.a) qScore++;
+  document.getElementById('quiz-score').textContent='Score: '+qScore+'/'+qTotal;
+  var exp=document.getElementById('quiz-exp');
+  exp.textContent=(i===q.a?'✓ Correct! ':'✗ Not quite. ')+q.exp;
+  exp.classList.add('show');
+  if (qIdx<QS.length-1) document.getElementById('quiz-next').style.display='inline-flex';
+  else document.getElementById('quiz-restart').style.display='inline-flex';
+}
+
+function nextQ(){qIdx++;renderQuiz();}
+function restartQuiz(){qIdx=0;qScore=0;qTotal=0;renderQuiz();}
+
+// ═══════════════════ MARKETS ═══════════════════
+var marketsLoaded = false;
+var FOREX = [{p:'EUR/USD',f:'EUR',t:'USD'},{p:'GBP/USD',f:'GBP',t:'USD'},{p:'USD/JPY',f:'USD',t:'JPY'},{p:'AUD/USD',f:'AUD',t:'USD'},{p:'USD/CHF',f:'USD',t:'CHF'},{p:'USD/CAD',f:'USD',t:'CAD'},{p:'NZD/USD',f:'NZD',t:'USD'},{p:'EUR/GBP',f:'EUR',t:'GBP'}];
+var CAL = [
+  {day:'Mon',event:'ISM Manufacturing PMI',impact:'🔴 High',cur:'USD',note:'Factory activity — moves USD pairs'},
+  {day:'Tue',event:'RBA Interest Rate Decision',impact:'🟡 Med',cur:'AUD',note:'Australia central bank — moves AUD'},
+  {day:'Wed',event:'FOMC Meeting Minutes',impact:'🔴 High',cur:'USD',note:'Fed policy hints — major USD mover'},
+  {day:'Wed',event:'US ADP Employment',impact:'🟡 Med',cur:'USD',note:'Jobs preview before Friday NFP'},
+  {day:'Thu',event:'ECB Rate Decision',impact:'🔴 High',cur:'EUR',note:'Europe central bank — big EUR mover'},
+  {day:'Thu',event:'US Initial Jobless Claims',impact:'🟡 Med',cur:'USD',note:'Weekly unemployment data'},
+  {day:'Fri',event:'Non-Farm Payrolls (NFP)',impact:'🔴 HIGH',cur:'USD',note:'Biggest monthly event — avoid 30min before/after'},
+  {day:'Fri',event:'US Unemployment Rate',impact:'🔴 High',cur:'USD',note:'Released with NFP — massive USD impact'},
+];
+
+async function loadMarkets(force) {
+  if (marketsLoaded && !force) return;
+  marketsLoaded = true;
+  loadSession();
+  loadCalendar();
+  loadForex();
+  try {
+    var r = await fetch('https://api.alternative.me/fng/?limit=1');
+    var d = await r.json();
+    var val=d.data[0].value, lbl=d.data[0].value_classification;
+    var cols={'Extreme Fear':'var(--red)','Fear':'#FB923C','Neutral':'var(--gold)','Greed':'var(--green)','Extreme Greed':'#22D3EE'};
+    document.getElementById('fng-val').textContent=val;
+    document.getElementById('fng-val').style.color=cols[lbl]||'var(--gold)';
+    document.getElementById('fng-lbl').textContent=lbl+' (Crypto Sentiment Index)';
+  } catch(e){document.getElementById('fng-lbl').textContent='Unavailable';}
+}
+
+async function loadForex() {
+  var grid=document.getElementById('forex-grid');
+  grid.innerHTML=FOREX.map(function(p){return '<div class="stat-card" id="fx-'+p.f+p.t+'"><div class="sc-label">'+p.p+'</div><div class="sc-val blue" style="font-size:17px">...</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Loading</div></div>';}).join('');
+  for (var i=0;i<FOREX.length;i++) {
+    var p=FOREX[i];
+    try {
+      var r=await fetch('https://api.frankfurter.app/latest?from='+p.f+'&to='+p.t);
+      var d=await r.json();
+      var rate=d.rates[p.t];
+      var card=document.getElementById('fx-'+p.f+p.t);
+      if (card&&rate){
+        card.querySelector('.sc-val').textContent=rate.toFixed(p.t==='JPY'?3:5);
+        card.querySelector('div:last-child').textContent='Live ✓';
+        card.querySelector('div:last-child').style.color='var(--green)';
+      }
+    } catch(e) {
+      var card2=document.getElementById('fx-'+p.f+p.t);
+      if (card2) card2.querySelector('div:last-child').textContent='N/A';
+    }
+  }
+}
+
+function loadSession() {
+  var h=new Date().getUTCHours();
+  var s,d,c;
+  if (h>=22||h<7){s='Sydney/Tokyo';d='Asian session — lower volatility';c='var(--blue)';}
+  else if (h>=7&&h<9){s='London Open';d='🔥 High volatility window!';c='var(--green)';}
+  else if (h>=9&&h<13){s='London';d='European session — active';c='var(--green)';}
+  else if (h>=13&&h<14){s='London+NY Overlap';d='🔥 Highest volatility!';c='var(--gold)';}
+  else if (h>=14&&h<18){s='New York';d='US session — active';c='var(--green)';}
+  else {s='Pre-market';d='Markets winding down';c='var(--text3)';}
+  document.getElementById('session-val').textContent=s;
+  document.getElementById('session-val').style.color=c;
+  document.getElementById('session-lbl').textContent=d+' · UTC '+String(h).padStart(2,'0')+':'+String(new Date().getUTCMinutes()).padStart(2,'0');
+}
+
+function loadCalendar() {
+  document.getElementById('cal-tbody').innerHTML=CAL.map(function(e){
+    return '<tr><td style="font-family:var(--mono);font-size:10px;color:var(--text3)">'+e.day+'</td><td style="color:var(--text)">'+e.event+'</td><td>'+e.impact+'</td><td><span class="badge badge-long">'+e.cur+'</span></td><td style="color:var(--text3);font-size:11px">'+e.note+'</td></tr>';
+  }).join('');
+}
+
+// ═══════════════════ CREATE STUDIO ═══════════════════
+var curType='diagram', curOutput='', curExt='svg';
+var CREATE = {
+  diagram:{ext:'svg',preview:true,prompts:['Flowchart of a 4-step trade setup','Market structure showing highs and lows','Risk management decision tree','Trading session hours diagram'],sys:'Generate a clean professional SVG diagram. Return ONLY raw SVG starting with <svg. Use viewBox="0 0 700 400", dark bg (#1a1a1a), green (#4ADE80) and gold (#F0B429) accents, clean sans-serif font. No explanation, no markdown fences.'},
+  html:{ext:'html',preview:true,prompts:['Trading checklist webpage','Daily routine planner','Motivational trading rules page','Market analysis template'],sys:'Generate a complete beautiful self-contained HTML page with embedded CSS and JS. Dark theme, professional, fully functional. Return ONLY raw HTML starting with <!DOCTYPE html>. No explanation, no markdown.'},
+  chart:{ext:'html',preview:true,prompts:['Bar chart of forex sessions by volatility','Pie chart of common beginner mistakes','Compound growth line chart','Win/loss ratio chart'],sys:'Generate a complete self-contained HTML using Chart.js CDN. Dark theme (#0d0f0e), green (#4ADE80) and gold (#F0B429) colors. Return ONLY raw HTML starting with <!DOCTYPE html>. No markdown.'},
+  svg:{ext:'svg',preview:true,prompts:['Abstract trading chart artwork','Bull vs bear market illustration','Minimalist forex symbols','Motivational trading poster'],sys:'Generate creative striking SVG artwork. Return ONLY raw SVG starting with <svg. viewBox="0 0 800 600". Rich colors and detail. No explanation, no markdown.'},
+  doc:{ext:'html',preview:true,prompts:['My trading rules document','Weekly review template','Trade setup checklist','Trading goals and vision'],sys:'Generate a clean professional HTML document styled like a Word doc (white bg, readable fonts, headings, sections). Print-ready. Return ONLY raw HTML starting with <!DOCTYPE html>. No markdown.'},
+  pdf:{ext:'html',preview:true,prompts:['Trading journal one-pager','Weekly performance report','Strategy rules PDF','Monthly goals summary'],sys:'Generate complete HTML optimized for printing/saving as PDF. Include @media print styles. Professional layout, white background. Return ONLY raw HTML starting with <!DOCTYPE html>. No markdown.'},
+  csv:{ext:'csv',preview:false,prompts:['Trade log template with columns','Weekly study tracker','Forex pairs reference data','Economic calendar template'],sys:'Generate clean well-structured CSV data. Return ONLY the raw CSV starting with the header row. Use commas. Include realistic sample data. No explanation, no markdown.'},
+  code:{ext:'js',preview:false,prompts:['Position size calculator function','Risk/reward calculator','Pip value calculator','Trade journal data structure'],sys:'Generate clean well-commented production-ready code. Return ONLY the raw code. No markdown fences or explanation. Include helpful comments.'},
+  image:{ext:'png',preview:false,prompts:['A bullish candlestick chart with green candles rising','A professional trading desk setup with multiple monitors','An abstract visualization of forex market flows','A minimalist bull vs bear poster for a trading room'],sys:'IMAGE_GENERATION'},
+
+};
+
+function pickType(t) {
+  curType=t; curExt=CREATE[t].ext;
+  document.querySelectorAll('.ct-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('ct-'+t).classList.add('active');
+  var qp=document.getElementById('quick-create-prompts');
+  qp.innerHTML=CREATE[t].prompts.map(function(p){return '<div class="chip" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="document.getElementById(\'create-prompt\').value=\''+p.replace(/'/g,"\\'")+'\'">→ '+p+'</div>';}).join('');
+  // Show image API key field only for image type
+  var keyRow = document.getElementById('img-key-row');
+  if (keyRow) keyRow.style.display = t==='image' ? 'block' : 'none';
+  // Reset output area
+  document.getElementById('output-preview').style.display='none';
+  document.getElementById('output-code').style.display='block';
+  document.getElementById('output-ph').style.display='flex';
+  document.getElementById('output-ph').innerHTML='<div style="font-size:32px">✨</div><div style="font-size:13px">Your creation appears here</div><div style="font-size:11px;color:var(--text3)">Pick a type, describe it, hit Generate</div>';
+  document.getElementById('output-ta').style.display='none';
+  var imgWrap = document.getElementById('output-img-wrap');
+  if (imgWrap) imgWrap.style.display='none';
+}
+
+async function runCreate() {
+  var prompt=document.getElementById('create-prompt').value.trim();
+  if (!prompt) return;
+  if (curType==='image') { await runImageGen(prompt); return; }
+  var type=CREATE[curType];
+  document.getElementById('create-btn').disabled=true;
+  document.getElementById('create-btn').textContent='Generating...';
+  document.getElementById('output-ph').style.display='flex';
+  document.getElementById('output-ph').innerHTML='<div style="font-size:28px">⏳</div><div style="font-size:13px;color:var(--text3)">Generating your creation...</div>';
+  document.getElementById('output-ta').style.display='none';
+  document.getElementById('output-preview').style.display='none';
+  document.getElementById('output-code').style.display='block';
+  try {
+    var text = await callAPI([{role:'user',content:'Create the following: '+prompt+'\n\n'+type.sys}], 'You are an expert creative file generator. Follow instructions exactly.', 4096);
+    // strip markdown fences
+    text = text.replace(/^```[\w]*\n?/gm,'').replace(/```$/gm,'').trim();
+    curOutput=text; curExt=type.ext;
+    document.getElementById('output-lbl').textContent=curType.toUpperCase()+' — Ready to download';
+    document.getElementById('dl-btn').style.display='block';
+    if (type.preview) {
+      document.getElementById('output-preview').style.display='block';
+      document.getElementById('output-code').style.display='none';
+      document.getElementById('output-frame').srcdoc=text;
+    } else {
+      document.getElementById('output-ph').style.display='none';
+      document.getElementById('output-ta').style.display='block';
+      document.getElementById('output-ta').value=text;
+    }
+  } catch(e) {
+    document.getElementById('output-ph').innerHTML='<div style="font-size:28px">⚠️</div><div style="font-size:13px;color:var(--red)">Error: '+e.message+'</div>';
+  }
+  document.getElementById('create-btn').disabled=false;
+  document.getElementById('create-btn').textContent='✨ Generate';
+}
+
+function dlOutput() {
+  if (!curOutput) return;
+  var blob=new Blob([curOutput],{type:'text/plain'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='creation.'+curExt;
+  a.click();
+}
+
+function copyOutput() {
+  if (!curOutput) return;
+  navigator.clipboard.writeText(curOutput).then(function(){
+    document.getElementById('copy-btn').textContent='Copied!';
+    setTimeout(function(){document.getElementById('copy-btn').textContent='Copy';},1500);
+  });
+}
+
+
+// ═══════════════════ IMAGE GENERATION ═══════════════════
+async function runImageGen(prompt) {
+  document.getElementById('create-btn').disabled = true;
+  document.getElementById('create-btn').textContent = 'Generating image...';
+  document.getElementById('output-preview').style.display = 'none';
+  document.getElementById('output-code').style.display = 'block';
+  document.getElementById('output-ph').style.display = 'flex';
+  document.getElementById('output-ph').innerHTML = '<div style="font-size:28px">🎨</div><div style="font-size:13px;color:var(--text3)">Generating image — this may take 15-30 seconds...</div>';
+  document.getElementById('output-ta').style.display = 'none';
+  document.getElementById('output-img-wrap').style.display = 'none';
+
+  var provider = getProvider();
+  var key = getKey();
+
+  // Check for a dedicated image key, fall back to main key
+  var imgKey = document.getElementById('img-api-key').value.trim() || key;
+
+  try {
+    var imageUrl = null;
+
+    // Try OpenAI DALL-E 3 first (works with OpenAI key or dedicated image key)
+    if (provider === 'openai' || document.getElementById('img-api-key').value.trim()) {
+      var useKey = document.getElementById('img-api-key').value.trim() || key;
+      var r = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Authorization':'Bearer '+useKey},
+        body: JSON.stringify({model:'dall-e-3', prompt:prompt, n:1, size:'1024x1024', response_format:'url'})
+      });
+      if (r.ok) {
+        var d = await r.json();
+        imageUrl = d.data && d.data[0] && d.data[0].url;
+      } else {
+        var err = await r.json().catch(function(){return{};});
+        throw new Error(err.error && err.error.message ? err.error.message : 'OpenAI image error '+r.status);
+      }
+    } else if (provider === 'openrouter') {
+      // OpenRouter supports some image models via standard chat with image output
+      // Use standard text API to generate an SVG art as fallback
+      throw new Error('openrouter_fallback');
+    } else {
+      throw new Error('no_image_provider');
+    }
+
+    if (imageUrl) {
+      curOutput = imageUrl;
+      curExt = 'png';
+      document.getElementById('output-lbl').textContent = 'AI Image — Ready';
+      document.getElementById('output-ph').style.display = 'none';
+      var wrap = document.getElementById('output-img-wrap');
+      wrap.style.display = 'flex';
+      document.getElementById('output-img').src = imageUrl;
+      document.getElementById('output-img-dl').href = imageUrl;
+      document.getElementById('dl-btn').style.display = 'block';
+    }
+
+  } catch(e) {
+    var msg = e.message;
+
+    // Graceful fallback: if no image provider, generate SVG art instead
+    if (msg === 'no_image_provider' || msg === 'openrouter_fallback') {
+      document.getElementById('output-ph').innerHTML = '<div style="font-size:24px">ℹ️</div><div style="font-size:13px;color:var(--gold)">Image generation requires an OpenAI key (DALL-E 3).<br><br>Enter your OpenAI key in the Image API Key field above, or switch to the OpenAI provider.<br><br><span style="color:var(--text3);font-size:11px">Alternatively, use SVG Art type for AI-generated artwork without an image key.</span></div>';
+    } else {
+      document.getElementById('output-ph').innerHTML = '<div style="font-size:28px">⚠️</div><div style="font-size:13px;color:var(--red)">'+msg+'</div>';
+    }
+  }
+
+  document.getElementById('create-btn').disabled = false;
+  document.getElementById('create-btn').textContent = '✨ Generate';
+}
+
+// Override dlOutput to handle image URLs
+var _origDlOutput = dlOutput;
+dlOutput = function() {
+  if (curType === 'image' && curOutput && curOutput.startsWith('http')) {
+    var a = document.createElement('a');
+    a.href = curOutput;
+    a.download = 'generated-image.png';
+    a.target = '_blank';
+    a.click();
+    return;
+  }
+  _origDlOutput();
+};
+
+// ═══════════════════ INIT ═══════════════════
+document.getElementById('week-badge').textContent = 'WEEK '+S.week;
+document.getElementById('stat-days').textContent = Object.keys(S.days).length;
+document.getElementById('stat-trades').textContent = S.trades.length;
+renderTrades();
+renderQuiz();
+pickType('diagram');
+</script>
+</body>
+</html>
