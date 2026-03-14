@@ -1,0 +1,2 @@
+# trading-agent
+AI agent
